@@ -1,0 +1,14 @@
+{
+    "name": "gemini-proxy",
+    "version": "1.0.0",
+    "private": true,
+    "scripts": {
+      "dev": "vercel dev",
+      "start": "vercel start"
+    },
+    "dependencies": {
+      "node-fetch": "^3.3.2"
+    },
+    "type": "module"
+  }
+  
