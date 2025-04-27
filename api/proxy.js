@@ -4,25 +4,34 @@ const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com';
 
 export default async function handler(req, res) {
   try {
-    // Полный URL для Gemini API (сохраняем оригинальный путь и query-параметры)
+    // Полный URL для Gemini API
     const targetUrl = `${GEMINI_API_BASE}${req.url.replace(/^\/api\/proxy/, '')}`;
 
     // Подготавливаем заголовки
     const headers = {
       ...req.headers,
-      host: 'generativelanguage.googleapis.com', // Устанавливаем правильный host
+      host: 'generativelanguage.googleapis.com',
     };
     
-    // Удаляем заголовки, которые могут мешать
+    // Удаляем проблемные заголовки
     delete headers['content-length'];
     delete headers['accept-encoding'];
     delete headers['connection'];
+
+    // Подготавливаем тело запроса
+    let requestBody;
+    if (req.method !== 'GET' && req.body) {
+      // Если тело уже объект (разобранный JSON), преобразуем обратно в строку
+      requestBody = typeof req.body === 'object' 
+        ? JSON.stringify(req.body) 
+        : req.body;
+    }
 
     // Опции для fetch
     const fetchOptions = {
       method: req.method,
       headers: headers,
-      body: req.method === 'GET' ? undefined : req.body,
+      body: requestBody,
     };
 
     // Делаем запрос к Gemini API
@@ -36,19 +45,19 @@ export default async function handler(req, res) {
         'Connection': 'keep-alive',
       });
       
-      fetchResponse.body.pipe(res);
-      return;
+      return fetchResponse.body.pipe(res);
     }
 
     // Для обычных JSON ответов
     const data = await fetchResponse.json();
-    res.status(fetchResponse.status).json(data);
+    return res.status(fetchResponse.status).json(data);
     
   } catch (error) {
     console.error('Proxy error:', error);
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: 'Internal server error',
-      details: error.message 
+      details: error.message,
+      fullError: error 
     });
   }
 }
